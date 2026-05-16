@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Daily Planner">
+<title>Daily Planner</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg: #f5f4f0;
+    --card: #ffffff;
+    --black: #111111;
+    --gray: #888888;
+    --lightgray: #e8e8e4;
+    --border: #ddddda;
+    --check: #111111;
+    --accent: #111111;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+
+  /* HEADER */
+  .app-header {
+    background: var(--black);
+    padding: 16px 20px 14px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .app-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    color: #fff;
+    text-transform: uppercase;
+  }
+
+  .date-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .date-btn {
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 2px 6px;
+    line-height: 1;
+  }
+  .date-btn:active { color: #fff; }
+
+  .date-display {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: #fff;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    padding: 4px 10px;
+    border: 0.5px solid #444;
+    border-radius: 2px;
+    flex: 1;
+    text-align: center;
+  }
+
+  /* DATE PICKER MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .calendar-modal {
+    background: #fff;
+    border-radius: 4px;
+    width: 300px;
+    padding: 20px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+  }
+
+  .cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .cal-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--black);
+    letter-spacing: 0.05em;
+  }
+  .cal-nav {
+    background: none;
+    border: 1px solid var(--border);
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2px;
+  }
+  .cal-nav:active { background: var(--lightgray); }
+
+  .cal-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    margin-bottom: 6px;
+  }
+  .cal-weekday {
+    text-align: center;
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--gray);
+    letter-spacing: 0.05em;
+    padding: 4px 0;
+  }
+
+  .cal-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+  .cal-day {
+    text-align: center;
+    padding: 6px 0;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 2px;
+    color: var(--black);
+    font-family: 'DM Mono', monospace;
+  }
+  .cal-day:hover { background: var(--lightgray); }
+  .cal-day.empty { cursor: default; }
+  .cal-day.today { font-weight: 700; }
+  .cal-day.selected {
+    background: var(--black);
+    color: #fff;
+  }
+
+  .cal-close {
+    margin-top: 14px;
+    width: 100%;
+    padding: 10px;
+    background: var(--black);
+    color: #fff;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 2px;
+  }
+
+  /* MAIN CONTENT */
+  .main {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* CARD */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    background: var(--black);
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    color: #fff;
+    text-transform: uppercase;
+  }
+  .card-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: #777;
+    letter-spacing: 0.05em;
+  }
+
+  /* TODO ROWS */
+  .todo-list { padding: 4px 0; }
+
+  .todo-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 0.5px solid var(--lightgray);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .todo-item:last-child { border-bottom: none; }
+  .todo-item:active { background: #fafafa; }
+
+  .checkbox {
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid #555;
+    border-radius: 1px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .checkbox.checked {
+    background: var(--black);
+    border-color: var(--black);
+  }
+  .checkbox.checked::after {
+    content: '';
+    width: 8px;
+    height: 5px;
+    border-left: 1.5px solid #fff;
+    border-bottom: 1.5px solid #fff;
+    transform: rotate(-45deg) translateY(-1px);
+  }
+
+  .todo-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--black);
+    background: transparent;
+    padding: 0;
+  }
+  .todo-input.done {
+    text-decoration: line-through;
+    color: #bbb;
+  }
+  .todo-input::placeholder { color: #ccc; }
+
+  /* GOAL ROWS */
+  .goal-list { padding: 4px 0; }
+  .goal-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 0.5px solid var(--lightgray);
+  }
+  .goal-item:last-child { border-bottom: none; }
+
+  .goal-num {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid #555;
+    border-radius: 50%;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    font-weight: 500;
+    color: #444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .goal-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--black);
+    background: transparent;
+    padding: 0;
+  }
+  .goal-input::placeholder { color: #ccc; }
+
+  /* ADD BUTTON */
+  .add-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 14px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: #bbb;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    width: 100%;
+    text-align: left;
+    border-top: 0.5px solid var(--lightgray);
+    transition: color 0.15s;
+  }
+  .add-btn:active { color: var(--black); }
+  .add-icon {
+    width: 14px;
+    height: 14px;
+    border: 1px solid #ccc;
+    border-radius: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    line-height: 1;
+    color: #ccc;
+  }
+
+  /* FOOTER */
+  .footer {
+    text-align: center;
+    padding: 20px;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: #ccc;
+    letter-spacing: 0.1em;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="app-header">
+  <div class="header-top">
+    <span class="app-title">Daily Planner</span>
+  </div>
+  <div class="date-selector">
+    <button class="date-btn" onclick="changeDay(-1)">‹</button>
+    <div class="date-display" onclick="openCalendar()" id="dateDisplay"></div>
+    <button class="date-btn" onclick="changeDay(1)">›</button>
+  </div>
+</div>
+
+<!-- CALENDAR MODAL -->
+<div class="modal-overlay" id="calModal">
+  <div class="calendar-modal">
+    <div class="cal-header">
+      <button class="cal-nav" onclick="changeMonth(-1)">‹</button>
+      <span class="cal-title" id="calTitle"></span>
+      <button class="cal-nav" onclick="changeMonth(1)">›</button>
+    </div>
+    <div class="cal-weekdays">
+      <div class="cal-weekday">SUN</div>
+      <div class="cal-weekday">MON</div>
+      <div class="cal-weekday">TUE</div>
+      <div class="cal-weekday">WED</div>
+      <div class="cal-weekday">THU</div>
+      <div class="cal-weekday">FRI</div>
+      <div class="cal-weekday">SAT</div>
+    </div>
+    <div class="cal-days" id="calDays"></div>
+    <button class="cal-close" onclick="closeCalendar()">확인</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TO DO LIST -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">To Do List</span>
+      <span class="card-count" id="todoCount">0 / 0</span>
+    </div>
+    <div class="todo-list" id="todoList"></div>
+    <button class="add-btn" onclick="addTodo()">
+      <div class="add-icon">+</div>
+      항목 추가
+    </button>
+  </div>
+
+  <!-- TODAY'S GOAL -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Today's Goal</span>
+    </div>
+    <div class="goal-list" id="goalList"></div>
+  </div>
+
+  <!-- STUDY -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Study</span>
+      <span class="card-count" id="studyCount">0 / 0</span>
+    </div>
+    <div class="todo-list" id="studyList"></div>
+    <button class="add-btn" onclick="addStudy()">
+      <div class="add-icon">+</div>
+      항목 추가
+    </button>
+  </div>
+
+  <!-- PERSONAL -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Personal</span>
+      <span class="card-count" id="personalCount">0 / 0</span>
+    </div>
+    <div class="todo-list" id="personalList"></div>
+    <button class="add-btn" onclick="addPersonal()">
+      <div class="add-icon">+</div>
+      항목 추가
+    </button>
+  </div>
+
+</div>
+
+<div class="footer">DAILY PLANNER · MINIMAL</div>
+
+<script>
+  // ── STATE ──
+  let currentDate = new Date();
+  let calViewDate = new Date();
+  let data = JSON.parse(localStorage.getItem('plannerData') || '{}');
+
+  function dateKey(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function getDay() {
+    const key = dateKey(currentDate);
+    if (!data[key]) {
+      data[key] = {
+        todos: [{ text:'', done:false }, { text:'', done:false }, { text:'', done:false }],
+        goals: ['', '', ''],
+        study: [{ text:'', done:false }, { text:'', done:false }],
+        personal: [{ text:'', done:false }, { text:'', done:false }]
+      };
+    }
+    return data[key];
+  }
+
+  function save() {
+    localStorage.setItem('plannerData', JSON.stringify(data));
+  }
+
+  // ── DATE ──
+  function formatDate(d) {
+    const days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+    const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    return `${d.getFullYear()} . ${months[d.getMonth()]} . ${String(d.getDate()).padStart(2,'0')} · ${days[d.getDay()]}`;
+  }
+
+  function changeDay(n) {
+    currentDate.setDate(currentDate.getDate() + n);
+    render();
+  }
+
+  // ── CALENDAR ──
+  function openCalendar() {
+    calViewDate = new Date(currentDate);
+    renderCalendar();
+    document.getElementById('calModal').classList.add('open');
+  }
+  function closeCalendar() {
+    document.getElementById('calModal').classList.remove('open');
+  }
+  function changeMonth(n) {
+    calViewDate.setMonth(calViewDate.getMonth() + n);
+    renderCalendar();
+  }
+  function selectDay(y, m, d) {
+    currentDate = new Date(y, m, d);
+    renderCalendar();
+  }
+  function renderCalendar() {
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    document.getElementById('calTitle').textContent = `${months[calViewDate.getMonth()]} ${calViewDate.getFullYear()}`;
+
+    const first = new Date(calViewDate.getFullYear(), calViewDate.getMonth(), 1).getDay();
+    const daysInMonth = new Date(calViewDate.getFullYear(), calViewDate.getMonth()+1, 0).getDate();
+    const today = new Date();
+
+    let html = '';
+    for (let i = 0; i < first; i++) html += `<div class="cal-day empty"></div>`;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const isToday = d === today.getDate() && calViewDate.getMonth() === today.getMonth() && calViewDate.getFullYear() === today.getFullYear();
+      const isSelected = d === currentDate.getDate() && calViewDate.getMonth() === currentDate.getMonth() && calViewDate.getFullYear() === currentDate.getFullYear();
+      html += `<div class="cal-day${isToday?' today':''}${isSelected?' selected':''}" onclick="selectDay(${calViewDate.getFullYear()},${calViewDate.getMonth()},${d})">${d}</div>`;
+    }
+    document.getElementById('calDays').innerHTML = html;
+  }
+
+  // ── RENDER ──
+  function render() {
+    document.getElementById('dateDisplay').textContent = formatDate(currentDate);
+    const day = getDay();
+    renderTodos('todoList', day.todos, 'todo');
+    renderGoals();
+    renderTodos('studyList', day.study, 'study');
+    renderTodos('personalList', day.personal, 'personal');
+    updateCounts();
+  }
+
+  function renderTodos(listId, items, type) {
+    const list = document.getElementById(listId);
+    list.innerHTML = '';
+    items.forEach((item, i) => {
+      const div = document.createElement('div');
+      div.className = 'todo-item';
+      div.innerHTML = `
+        <div class="checkbox ${item.done ? 'checked' : ''}" onclick="toggleItem('${type}', ${i})"></div>
+        <input class="todo-input ${item.done ? 'done' : ''}" type="text" placeholder="할 일 입력..." value="${item.text}" 
+          oninput="updateText('${type}', ${i}, this.value)"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();addByType('${type}')}"
+        />
+      `;
+      list.appendChild(div);
+    });
+  }
+
+  function renderGoals() {
+    const day = getDay();
+    const list = document.getElementById('goalList');
+    list.innerHTML = '';
+    day.goals.forEach((g, i) => {
+      const div = document.createElement('div');
+      div.className = 'goal-item';
+      div.innerHTML = `
+        <div class="goal-num">${i+1}</div>
+        <input class="goal-input" type="text" placeholder="목표 입력..." value="${g}"
+          oninput="updateGoal(${i}, this.value)" />
+      `;
+      list.appendChild(div);
+    });
+  }
+
+  function updateCounts() {
+    const day = getDay();
+    const setCount = (id, arr) => {
+      const done = arr.filter(x => x.done).length;
+      document.getElementById(id).textContent = `${done} / ${arr.length}`;
+    };
+    setCount('todoCount', day.todos);
+    setCount('studyCount', day.study);
+    setCount('personalCount', day.personal);
+  }
+
+  // ── ACTIONS ──
+  function toggleItem(type, i) {
+    const day = getDay();
+    const arr = type === 'todo' ? day.todos : type === 'study' ? day.study : day.personal;
+    arr[i].done = !arr[i].done;
+    save(); render();
+  }
+
+  function updateText(type, i, val) {
+    const day = getDay();
+    const arr = type === 'todo' ? day.todos : type === 'study' ? day.study : day.personal;
+    arr[i].text = val;
+    save();
+    updateCounts();
+  }
+
+  function updateGoal(i, val) {
+    const day = getDay();
+    day.goals[i] = val;
+    save();
+  }
+
+  function addTodo() { getDay().todos.push({ text:'', done:false }); save(); render(); setTimeout(()=>{ const inputs = document.querySelectorAll('#todoList .todo-input'); inputs[inputs.length-1].focus(); }, 50); }
+  function addStudy() { getDay().study.push({ text:'', done:false }); save(); render(); setTimeout(()=>{ const inputs = document.querySelectorAll('#studyList .todo-input'); inputs[inputs.length-1].focus(); }, 50); }
+  function addPersonal() { getDay().personal.push({ text:'', done:false }); save(); render(); setTimeout(()=>{ const inputs = document.querySelectorAll('#personalList .todo-input'); inputs[inputs.length-1].focus(); }, 50); }
+
+  function addByType(type) {
+    if (type === 'todo') addTodo();
+    else if (type === 'study') addStudy();
+    else if (type === 'personal') addPersonal();
+  }
+
+  // ── INIT ──
+  render();
+</script>
+</body>
+</html>
