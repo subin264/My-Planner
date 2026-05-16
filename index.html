@@ -564,7 +564,7 @@
     });
   }
 
-  function renderGoals() {
+function renderGoals() {
     const day = getDay();
     const list = document.getElementById('goalList');
     list.innerHTML = '';
@@ -575,11 +575,30 @@
         <div class="goal-num">${i+1}</div>
         <input class="goal-input" type="text" placeholder="목표 입력..." value="${g}"
           oninput="updateGoal(${i}, this.value)" />
+        <button class="delete-btn" onclick="deleteGoal(${i})">×</button>
       `;
       list.appendChild(div);
     });
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-btn';
+    addBtn.innerHTML = '<div class="add-icon">+</div> 목표 추가';
+    addBtn.onclick = () => {
+      day.goals.push('');
+      save();
+      renderGoals();
+      setTimeout(() => {
+        const inputs = document.querySelectorAll('#goalList .goal-input');
+        inputs[inputs.length-1].focus();
+      }, 50);
+    };
+    list.appendChild(addBtn);
   }
-
+  function deleteGoal(i) {
+    const day = getDay();
+    day.goals.splice(i, 1);
+    save();
+    renderGoals();
+  } 
   function updateCounts() {
     const day = getDay();
     const setCount = (id, arr) => {
