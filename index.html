@@ -237,6 +237,19 @@
   .todo-item:last-child { border-bottom: none; }
   .todo-item:active { background: #fafafa; }
 
+  .delete-btn {
+    background: none;
+    border: none;
+    color: #ddd;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0 2px;
+    flex-shrink: 0;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .delete-btn:active { color: #ff4444; }
+
   .checkbox {
     width: 16px;
     height: 16px;
@@ -544,6 +557,7 @@
           oninput="updateText('${type}', ${i}, this.value)"
           onkeydown="if(event.key==='Enter'){event.preventDefault();addByType('${type}')}"
         />
+        <button class="delete-btn" onclick="deleteItem('${type}', ${i})">×</button>
       `;
       list.appendChild(div);
     });
@@ -606,6 +620,13 @@
     if (type === 'todo') addTodo();
     else if (type === 'study') addStudy();
     else if (type === 'personal') addPersonal();
+  }
+
+  function deleteItem(type, i) {
+    const day = getDay();
+    const arr = type === 'todo' ? day.todos : type === 'study' ? day.study : day.personal;
+    arr.splice(i, 1);
+    save(); render();
   }
 
   // ── INIT ──
